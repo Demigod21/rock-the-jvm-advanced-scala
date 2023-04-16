@@ -58,4 +58,66 @@ object AdvPatternMatching extends App {
     case _ => "no property"
   }
 
+  //infix patterns
+  case class Or[A, B](a: A, b: B)
+  val either = Or(2, "two")
+  val humanDescription = either match {
+    case Or(number, string) => s"$number is written as $string"
+  }
+  val humanDescription2 = either match {
+    case number Or string => s"$number is written as $string"
+  }
+
+  // decomposing dequences
+  val vararg = numbers match {
+    case List(1, _*) => "starting with 1"
+  }
+  println(vararg)
+
+  abstract class MyList[+A]{
+    def head: A = ???
+    def tail: MyList[A] = ???
+  }
+  case object Empty extends MyList[Nothing]
+  case class Cons[+A](override val head: A, override val tail: MyList[A]) extends MyList[A]
+
+  object MyList {
+    def unapplySeq[A](list: MyList[A]) : Option[Seq[A]] =
+      if(list == Empty) Some(Seq.empty)
+      else unapplySeq(list.tail).map(list.head +: _)
+  }
+
+  val myList: MyList[Int] = Cons(1, Cons(2, Cons(3, Empty)))
+  val decomposed = myList match {
+    case MyList(1, 2, _*) => "starting with 1 and 2"
+    case _ => "something else"
+  }
+  println(decomposed)
+  /*
+    compiler looks for unapply method inside object MyList
+    finds a function that decompose a MyList into a Seq and can use the _* on the Seq
+   */
+
+  // custom return types for unapply
+  // isEmpty : Boolean, get: something
+  abstract class Wrapper[T]{
+    def isEmpty: Boolean
+    def get: T
+  }
+
+  object PersonWrapper {
+    def unapply(person: Persona): Wrapper[String] = new Wrapper[String] {
+      override def isEmpty: Boolean = false
+      override def get: String = person.name
+    }
+  }
+
+  val matchingBob = bob match {
+    case PersonWrapper(n) => s"This person name is $n"
+    case _ => "An alien"
+  }
+  println(matchingBob)
+  // custom unapply doesn't have to return Option, but something that has "isEmpty" and "get"
+
+
 }
