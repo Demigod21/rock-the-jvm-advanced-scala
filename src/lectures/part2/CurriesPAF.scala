@@ -71,9 +71,6 @@ object CurriesPAF extends App {
   println("%4.2f".format(Math.PI))
 
   def curriedFormatter(number: Double)(repr: String): String = repr.format(number)
-  val simpleFormat = curriedFormatter(_)("%4.2f")
-  val seriousFormat = curriedFormatter(_)("%8.6f")
-  val preciseFormat = curriedFormatter(_)("%14.12f")
 
   //2
   def byName(n: => Int) = n +1
