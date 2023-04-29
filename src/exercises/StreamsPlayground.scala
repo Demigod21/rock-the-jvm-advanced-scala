@@ -15,7 +15,7 @@ abstract class MyStream[+A] {
   def tail : MyStream[A]
 
   def #::[B >: A](element: B): MyStream[B] //prepend operator
-  def ++[B >: A](anotherStream: MyStream[B]): MyStream[B] // concatenate two streams
+  def ++[B >: A](anotherStream: => MyStream[B]): MyStream[B] // concatenate two streams
 
   def foreach(f: A => Unit): Unit
   def map[B](f: A => B) : MyStream[B]
@@ -47,7 +47,7 @@ object EmptyStream extends MyStream[Nothing]{
 
   override def #::[B >: Nothing](element: B): MyStream[B] = new Cons(element, this)
 
-  override def ++[B >: Nothing](anotherStream: MyStream[B]): MyStream[B] = anotherStream
+  override def ++[B >: Nothing](anotherStream: => MyStream[B]): MyStream[B] = anotherStream
 
   override def foreach(f: Nothing => Unit): Unit = ()
 
@@ -76,7 +76,7 @@ class Cons[+A](hd: A, tl: => MyStream[A]) extends MyStream[A]{
 
   override def #::[B >: A](element: B): MyStream[B] = new Cons(element, this)
 
-  override def ++[B >: A](anotherStream: MyStream[B]): MyStream[B] = new Cons(head, tail ++ anotherStream)
+  override def ++[B >: A](anotherStream: => MyStream[B]): MyStream[B] = new Cons(head, tail ++ anotherStream)
 
   override def foreach(f: A => Unit): Unit = {
     f(head)
@@ -90,7 +90,7 @@ class Cons[+A](hd: A, tl: => MyStream[A]) extends MyStream[A]{
  */
   override def map[B](f: A => B): MyStream[B] = new Cons(f(head), tail.map(f))
 
-  override def flatMap[B](f: A => MyStream[B]): MyStream[B] = f(head) ++ tail.flatMap(f)
+  override def flatMap[B](f: A => MyStream[B]): MyStream[B] = f(head) ++ tail.flatMap(f)  //tail.flatMap(f) this must be eager evalauted, so ++ must not preserve evalauted
 
   override def filter(predicate: A => Boolean): MyStream[A] = {
     if(predicate(head)) new Cons(head, tail.filter(predicate)) else tail.filter(predicate)
@@ -126,4 +126,17 @@ object StreamsPlayground extends App{
 
   //map flatmap
   println(startFrom0.map(_ * 2).take(100).toList())
+
+  // exercises
+  // 1 - stream of fibonacci numbers
+  // 2 - stream of prime numbers with EratoSthenes' sieve
+  /*
+  [2 3  .....]
+  filter out all numbers divisible by 2
+  [3 5 7 9 11]
+  filter out all numbers by divisible by 3
+  [2 3 5 7 11 13 17 ....]
+  filter out all numbers by dividible by 5
+
+   */
 }
