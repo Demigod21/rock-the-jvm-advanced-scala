@@ -1,5 +1,8 @@
 package lectures.part3
 
+import scala.collection.mutable
+import scala.util.Random
+
 object ThreadCommunication extends App {
 
   /*
@@ -74,7 +77,53 @@ object ThreadCommunication extends App {
     consumer.start()
     producer.start()
   }
-  smartProdCons()
+  //smartProdCons()
 
+  /*
+  * working with buffer
+   */
+
+  def prodConsLargeBuffer(): Unit = {
+    val buffer: mutable.Queue[Int] = new mutable.Queue[Int]
+    val capacity = 3
+
+    val consumer = new Thread(() => {
+      val random = new Random()
+      while(true) {
+        buffer.synchronized{
+          if(buffer.isEmpty) {
+            println("[consumer] buffer empty waiting")
+            buffer.wait()
+          }
+          // here must be at least one value
+          val x = buffer.dequeue()
+          println("[consumer] I consumed "+ x)
+          buffer.notify()
+        }
+        Thread.sleep(random.nextInt(500))
+      }
+    })
+
+    val producer = new Thread(() => {
+      val random = new Random()
+      var i = 0
+      while(true){
+        buffer.synchronized{
+          if(buffer.size == capacity) {
+            println("[producer] buffer is full")
+            buffer.wait()
+          }
+          //at least one empty space
+          println("[producer] producing " + i)
+          buffer.enqueue(i)
+          i+=1
+          buffer.notify()
+        }
+      }
+    })
+
+    consumer.start()
+    producer.start()
+  }
 
 }
