@@ -15,12 +15,15 @@ object ThreadCommunication extends App {
 
   class SimpleContainer {
     private var value: Int = 0
+
     def isEmpty: Boolean = value == 0
+
     def get: Int = {
       val result = value
       value = 0
       result
     }
+
     def set(newValue: Int): Unit = value = newValue
   }
 
@@ -29,7 +32,7 @@ object ThreadCommunication extends App {
 
     val consumer = new Thread(() => {
       println("[consumer] waiting...")
-      while(container.isEmpty){
+      while (container.isEmpty) {
         println("[consumer] actively waiting")
       }
       println("[consumer] I have consumed " + container.get)
@@ -55,7 +58,7 @@ object ThreadCommunication extends App {
 
     val consumer = new Thread(() => {
       println("[consumer] waiting..")
-      container.synchronized{
+      container.synchronized {
         container.wait()
 
       }
@@ -68,7 +71,7 @@ object ThreadCommunication extends App {
       Thread.sleep(2000)
       val value = 342
 
-      container.synchronized{
+      container.synchronized {
         println("[producer] I'm producing" + value)
         container.set(value)
         container.notify()
@@ -89,15 +92,15 @@ object ThreadCommunication extends App {
 
     val consumer = new Thread(() => {
       val random = new Random()
-      while(true) {
-        buffer.synchronized{
-          if(buffer.isEmpty) {
+      while (true) {
+        buffer.synchronized {
+          if (buffer.isEmpty) {
             println("[consumer] buffer empty waiting")
             buffer.wait()
           }
           // here must be at least one value
           val x = buffer.dequeue()
-          println("[consumer] I consumed "+ x)
+          println("[consumer] I consumed " + x)
           buffer.notify()
         }
         Thread.sleep(random.nextInt(500))
@@ -107,16 +110,16 @@ object ThreadCommunication extends App {
     val producer = new Thread(() => {
       val random = new Random()
       var i = 0
-      while(true){
-        buffer.synchronized{
-          if(buffer.size == capacity) {
+      while (true) {
+        buffer.synchronized {
+          if (buffer.size == capacity) {
             println("[producer] buffer is full")
             buffer.wait()
           }
           //at least one empty space
           println("[producer] producing " + i)
           buffer.enqueue(i)
-          i+=1
+          i += 1
           buffer.notify()
         }
       }
@@ -135,15 +138,15 @@ object ThreadCommunication extends App {
     override def run(): Unit = {
       val random = new Random()
 
-      while(true) {
-        buffer.synchronized{
-          while(buffer.isEmpty) {
+      while (true) {
+        buffer.synchronized {
+          while (buffer.isEmpty) {
             println(s"[consumer $id] buffer empty waiting")
             buffer.wait()
           }
           // here must be at least one value
           val x = buffer.dequeue()
-          println(s"[consumer $id] I consumed "+ x)
+          println(s"[consumer $id] I consumed " + x)
           buffer.notify()
         }
         Thread.sleep(random.nextInt(500))
@@ -155,21 +158,21 @@ object ThreadCommunication extends App {
     override def run(): Unit = {
       val random = new Random()
       var i = 0
-      while(true){
-        buffer.synchronized{
-          while(buffer.size == capacity) {
+      while (true) {
+        buffer.synchronized {
+          while (buffer.size == capacity) {
             println(s"[producer$id] buffer is full")
             buffer.wait()
           }
           //at least one empty space
           println(s"[producer$id] producing " + i)
           buffer.enqueue(i)
-          i+=1
+          i += 1
           buffer.notify()
         }
       }
     }
-    }
+  }
 
   def multiProdCons(nConsumer: Int, nProducer: Int): Unit = {
     val buffer: mutable.Queue[Int] = new mutable.Queue[Int]
@@ -179,4 +182,58 @@ object ThreadCommunication extends App {
     (1 to nProducer).foreach(i => new Producer(i, buffer, capacity).start())
   }
 
+  /*
+  * Exercise
+  * 1) think of an example where notifyAll acts in a different way
+  * 2) create a deadlock
+  * 3) create a livelock
+   */
+  // EXERCISE 1 - NOTIFY ALL
+  def testNotifyAll(): Unit = {
+    val bell = new Object
+    (1 to 10).foreach(i => new Thread(() => {
+      bell.synchronized {
+        println(s"[thread $i] waiting...")
+        bell.wait()
+        println(s"[thread $i] hurray!")
+      }
+    }).start())
+    new Thread(() => {
+      Thread.sleep(1999)
+      bell.synchronized {
+        println(s"[announcer] rock and roll")
+        bell.notifyAll()
+      }
+    })
   }
+
+  // EXERCISE 2 - DEADLOCK
+  case class Friend(name: String){
+    def bow(other: Friend) = {
+      this.synchronized{
+        println(s"I'm bowing to my friend $other")
+        other.rise(this)
+        println(s"$this my friend $other has risen")
+      }
+    }
+    def rise(other:Friend) = {
+      this.synchronized{
+        println(s"I'm rising t my friend $other")
+      }
+    }
+  }
+
+  val sam = Friend("sam")
+  val pierre = Friend("pierre")
+
+  new Thread(() => {
+    sam.bow(pierre)
+  }).start()
+
+  new Thread(() => {
+    pierre.bow(sam)
+  }).start()
+
+
+
+}
