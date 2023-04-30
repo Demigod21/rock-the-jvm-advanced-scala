@@ -3,7 +3,7 @@ package lectures.part3
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future, Promise}
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Try}
 
 object FuturesPremises extends App {
 
@@ -150,6 +150,55 @@ object FuturesPremises extends App {
     promise.success(42)
     println("[producer] done")
   })
+
+  /*
+  * 1) fulfill a future immediately with a value
+  * 2) inSequence(fa, fb) -> run fb after fa is completed
+  * 3) first(fa, fb) return => new future of the first future completed
+  * 4) last(fa, fb) reutrn => new Future with last value
+  * 5) retryUntil[T](action: () => Future[T], condition: T => Boolean) : Future[T]
+  * run the action, we obtain T, we apply condition, if true => we return the value
+   */
+
+  def fulfill[T](value: T): Future[T] = Future(value)
+
+  def inSequence[A, B](first: Future[A], second: Future[B]): Future[B] = {
+    first.flatMap(_ => second)
+  }
+
+  def first[A](fa: Future[A], fb: Future[A]): Future[A] = {
+    val promise1 = Promise[A]
+
+    fa.onComplete(promise1.tryComplete)
+    fb.onComplete(promise1.tryComplete)
+
+    promise1.future
+  }
+
+  def last[A](fa: Future[A], fb: Future[A]): Future[A] = {
+    val bothPromise = Promise[A]
+    val lastPromise = Promise[A]
+    // 1 promise which both future will try complete
+    // the one who fails, will complete the second promise -> this is our last
+
+    val checkAndComplete = (result: Try[A]) => if (!bothPromise.tryComplete(result))
+      lastPromise.complete(result)
+
+    fa.onComplete(checkAndComplete)
+    fb.onComplete(checkAndComplete)
+
+    lastPromise.future
+
+  }
+
+
+  def retryUntil[T](action: () => Future[T], condition: T => Boolean): Future[T] = {
+    action()
+      .filter(condition)
+      .recoverWith {
+        case _ => retryUntil(action, condition)
+      }
+  }
 
 
 }
