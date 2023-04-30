@@ -38,12 +38,12 @@ object TypeClasses extends App {
     def serialize(value: T): String
   }
 
-  object UserSerializer extends HTMLSerializer[User] {
+  implicit object UserSerializer extends HTMLSerializer[User] {
     def serialize(value: User): String = s"<div>${value.name} (${value.age}) yo <a href=${value.email}> </div>"
   }
 
   val john = User("John", 32, "john@gmail.com")
-  println(UserSerializer.serialize(john))
+  // println(UserSerializer.serialize(john))
 
   // 1 - we can define serializer for other types
   import java.util.Date
@@ -65,18 +65,56 @@ object TypeClasses extends App {
     def action(value: T): String
   }
 
+  object MyTypeClassTemplate{
+    def apply[T](implicit instance: MyTypeClassTemplate[T]): MyTypeClassTemplate[T] = instance
+  }
+
   /**
    * Equality
    */
   trait Equal[T]{
-    def equal(value: T, value2: T): Boolean
+    def apply(value: T, value2: T): Boolean
   }
-  object UserEqualizerName extends Equal[User]{
-    override def equal(value: User, value2: User): Boolean = value.name.equals(value2.name)
+
+  implicit object UserEqualizerName extends Equal[User]{
+    override def apply(value: User, value2: User): Boolean = value.name.equals(value2.name)
   }
   object UserEqualizerAge extends Equal[User]{
-    override def equal(value: User, value2: User): Boolean = value.age == value2.name
+    override def apply(value: User, value2: User): Boolean = value.age == value2.age
   }
+
+  // part 2
+  object HTMLSerializer {
+    def serialize[T](value: T)(implicit serializer: HTMLSerializer[T]) : String =
+      serializer.serialize(value)
+
+    def apply[T](implicit serializer: HTMLSerializer[T]): HTMLSerializer[T] = serializer
+  }
+
+  implicit object IntSerializer extends HTMLSerializer[Int]{
+    override def serialize(value: Int): String = s"<div>$value</div>"
+  }
+
+  println(HTMLSerializer.serialize(42))
+  //println(HTMLSerializer.serialize(42)(IntSerializer))
+
+  println(HTMLSerializer.serialize(john)) //we made userSerializer implicit
+
+  // we have access to the entire type class interface, not only the serializer
+  println(HTMLSerializer[User].serialize(john))
+
+
+  /**
+   * Exercise : implement type class pattern for the equality
+   */
+  object Equal{
+    def apply[T](a:T, b:T)(implicit equalizer: Equal[T]) : Boolean = equalizer.apply(a, b)
+  }
+
+  val anotherJohn = User("John", 45, "nono@gmail.com")
+
+  println(Equal(john, anotherJohn))
+  // AD-HOC polymorphism
 
 }
 
