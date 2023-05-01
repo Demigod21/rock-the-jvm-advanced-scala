@@ -97,6 +97,6 @@ object RockingInheritance extends App {
    * TYPE LINEARIZATION!
    * SUPER TAKES THE ELEMENT TO THE LEFT
    * THERE IS NO SUPER IN COLD, THE "CHAIN" GETS BROKEN THERE
-   * 
+   *
    */
 }
