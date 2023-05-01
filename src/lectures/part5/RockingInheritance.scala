@@ -50,6 +50,7 @@ object RockingInheritance extends App {
     def print: Unit = println("cold")
   }
 
+  /*
   trait Green extends Cold {
     override def print: Unit = {
       println("green")
@@ -76,7 +77,7 @@ object RockingInheritance extends App {
   }
 
   val color = new White
-  color.print // white blue green cold -> NOT RED, WHY
+  color.print // white blue green cold -> NOT RED, WHY */
   // COLD = ANYREF WITH COLD
   // GREEN = COLD WITH GREEN
   // = ANY REF WITH COLD WITH GREEN
